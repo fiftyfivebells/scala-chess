@@ -9,7 +9,8 @@ object Board {
 }
 
 final case class SquareBoard(squares: Vector[Piece]) extends Board {
-  def apply(i: Int): Piece = squares(i)
+final case class SquareBoard(squares: Vector[Option[Piece]]) extends Board {
+  def apply(i: Int): Option[Piece] = squares(i)
 }
 
 final case class PieceBoard(white: Vector[Bitboard], black: Vector[Bitboard])
@@ -33,13 +34,13 @@ object BoardService {
 
         val pieces =
           boardString.reverse.zipWithIndex.foldLeft(
-            Vector.fill(64)(Piece(NoPiece, None))
-          ) { (acc: Vector[Piece], pair: (Char, Int)) =>
+            Vector.fill(64)(None: Option[Piece])
+          ) { (acc: Vector[Option[Piece]], pair: (Char, Int)) =>
             {
               val i = pair._2
               pair._1 match {
-                case c if c.isLower => acc.updated(i, Piece(c, Black))
-                case c if c.isUpper => acc.updated(i, Piece(c, White))
+                case c if c.isLower => acc.updated(i, Some(Piece(c, Black)))
+                case c if c.isUpper => acc.updated(i, Some(Piece(c, White)))
                 case _              => acc
               }
             }

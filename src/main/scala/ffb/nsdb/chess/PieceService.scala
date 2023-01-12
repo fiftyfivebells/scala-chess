@@ -3,7 +3,7 @@ package ffb.nsdb.chess
 sealed trait PieceService {
 
   def getType(piece: Piece): PieceType
-  def getColor(piece: Piece): Option[Color]
+  def getColor(piece: Piece): Color
 }
 
 trait PieceServiceImpl extends PieceService {
@@ -12,7 +12,6 @@ trait PieceServiceImpl extends PieceService {
   val ColorMask = 8
 
   def getType(piece: Piece): PieceType = (piece.value & TypeMask) match {
-    case 0 => NoPiece
     case 1 => Pawn
     case 2 => Bishop
     case 3 => Knight
@@ -21,9 +20,5 @@ trait PieceServiceImpl extends PieceService {
     case 7 => King
   }
 
-  def getColor(piece: Piece): Option[Color] = (piece.value & TypeMask) match {
-    case 0 => None
-    case _ => if ((piece.value & ColorMask) == 0) Some(White) else Some(Black)
-  }
-
+  def getColor(piece: Piece): Color = if ((piece.value & ColorMask) == 0) White else Black
 }
