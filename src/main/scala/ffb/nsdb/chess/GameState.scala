@@ -1,9 +1,7 @@
-package ffb.nsdb.chess.board
+package ffb.nsdb.chess
 
 import ffb.nsdb.chess._
-import ffb.nsdb.chess.board.PieceBoard
-import ffb.nsdb.chess.board.PieceBoard
-import ffb.nsdb.chess.board.CastleRights
+import ffb.nsdb.chess.board.{Board, BoardService, CastleRights, PieceBoard, Square, SquareBoard}
 
 final case class GameState(
     pieces: PieceBoard,
@@ -22,7 +20,7 @@ trait GameStateService {
     setBoardState("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
   }
   def boardStateToFen(bs: GameState): String
-  def getPieceAtSquare(bs: GameState, file: String, rank: Int): Piece
+  def getPieceAtSquare(bs: GameState, file: String, rank: Int): Option[Piece]
 }
 
 trait GameStateServiceImpl extends GameStateService {
@@ -30,35 +28,29 @@ trait GameStateServiceImpl extends GameStateService {
   def setBoardState(fenString: String): GameState = {
     val fenProps = fenString.split(" ")
 
-    val pieces = Board.setBoard[PieceBoard](fenProps(0))
-    val squares = Board.setBoard[SquareBoard](fenProps(0))
+    val pieces = Board.getBoardFromString[PieceBoard](fenProps(0))
+    val squares = Board.getBoardFromString[SquareBoard](fenProps(0))
 
     val sideToMove = fenProps(1) match {
       case "w" => White
       case "b" => Black
-      case  _  => throw new Error("Invalid side string provided")
+      case  _  => throw new Exception("Invalid side string provided")
     }
 
     val castleRights = CastleRights(fenProps(2))
 
     val epTarget = None
 
-    val halfMoveClock = Option(fenProps(4).toInt) match {
-      case Some(n) => n
-      case None    => throw new Error("Half move clock was not a number")
-    }
+    val halfMoveClock = Option(fenProps(4).toInt).getOrElse(throw new Exception("Half move clock was not a number"))
 
-    val fullMove = Option(fenProps(5).toInt) match {
-      case Some(n) => n
-      case None    => throw new Error("Full move count value was not a number")
-    }
+    val fullMove = Option(fenProps(5).toInt).getOrElse(throw new Exception("Full move count value was not a number"))
 
     GameState(pieces, squares, sideToMove, castleRights, epTarget, halfMoveClock, fullMove)
   }
 
   def boardStateToFen(bs: GameState): String = "TO BE IMPLEMENTED"
 
-  def getPieceAtSquare(bs: GameState, file: String, rank: Int): Piece =
+  def getPieceAtSquare(bs: GameState, file: String, rank: Int): Option[Piece] =
     "abcdefgh".indexOf(file.toLowerCase) match {
       case -1 =>
         throw new Error("File string provided does not exist on the board")

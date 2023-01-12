@@ -4,11 +4,10 @@ import ffb.nsdb.chess._
 
 sealed trait Board
 object Board {
-  def setBoard[A](fenString: String)(implicit bs: BoardService[A]): A =
+  def getBoardFromString[A](fenString: String)(implicit bs: BoardService[A]): A =
     bs.setBoardPositions(fenString)
 }
 
-final case class SquareBoard(squares: Vector[Piece]) extends Board {
 final case class SquareBoard(squares: Vector[Option[Piece]]) extends Board {
   def apply(i: Int): Option[Piece] = squares(i)
 }
