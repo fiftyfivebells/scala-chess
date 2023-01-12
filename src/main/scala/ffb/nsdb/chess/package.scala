@@ -52,11 +52,6 @@ package object chess {
         case King.mask    => King
       }
 
-      // val color = (value & 8) match {
-      //   case 0 => White
-      //   case 1 => Black
-      // }
-
       pt match {
         case NoPiece => NoPiece.toString
         case t => ((value >> 3) & 1) match {

@@ -32,8 +32,6 @@ trait GameStateServiceImpl extends GameStateService {
 
     val pieces = Board.setBoard[PieceBoard](fenProps(0))
     val squares = Board.setBoard[SquareBoard](fenProps(0))
-    // val pieces = PieceBoard.setBoardPositions(fenProps(0))
-    // val squares = SquareBoard.setBoardPositions(fenProps(0))
 
     val sideToMove = fenProps(1) match {
       case "w" => White
