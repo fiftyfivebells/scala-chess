@@ -1,6 +1,5 @@
 package ffb.nsdb.chess
 
-
 import zio.{ZIO, ZIOAppDefault}
 import zio.http.Server
 
