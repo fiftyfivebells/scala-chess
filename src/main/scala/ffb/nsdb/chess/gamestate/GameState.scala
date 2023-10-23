@@ -85,13 +85,13 @@ object GameStateResponse {
 }
 
 final case class GameStateSuccess(
-                                   board: IndexedSeq[String],
-                                   sideToMove: Color,
-                                   castleAvailability: CastleAvailability,
-                                   epTarget: Option[Position],
-                                   halfMove: Int,
-                                   fullMove: Int
-                                 ) extends GameStateResponse
+  board: IndexedSeq[String],
+  sideToMove: Color,
+  castleAvailability: CastleAvailability,
+  epTarget: Option[Position],
+  halfMove: Int,
+  fullMove: Int
+  ) extends GameStateResponse
 object GameStateSuccess {
   implicit val encoder: JsonEncoder[GameStateSuccess] = DeriveJsonEncoder.gen[GameStateSuccess]
   implicit val decoder: JsonDecoder[GameStateSuccess] = DeriveJsonDecoder.gen[GameStateSuccess]
