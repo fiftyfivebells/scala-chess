@@ -173,6 +173,6 @@ object MailBoxBoard {
       }
       MailBoxBoard(newBoard)
     }
-  val live: ULayer[MailBoxBoard] =
+  val layer: ULayer[MailBoxBoard] =
     ZLayer.succeed(MailBoxBoard(IndexedSeq.fill(120)(OutOfBounds: Square)))
 }
