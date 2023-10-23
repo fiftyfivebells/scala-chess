@@ -1,18 +1,22 @@
 package ffb.nsdb.chess
 
-import zio.{Console, ExitCode, URIO, ZIOAppDefault}
-import zio.http.{->, /, App, Http, Method, Request, Response, Root, Server}
+
+import zio.{ZIO, ZIOAppDefault}
+import zio.http.Server
+
+import ffb.nsdb.chess.board.MailBoxBoard
+import ffb.nsdb.chess.gamestate.GameStateApp
 
 object Main extends ZIOAppDefault {
   val Port: Int = 8080
 
-  val app: App[Any] =
-    Http.collect[Request] {
-      case Method.GET -> Root / "bestMove" => Response.text("TO BE IMPLEMENTED: best move returned here")
-    }
-
-  override val run: URIO[Any, ExitCode] =
-    Console.printLine(s"Starting server on port $Port")
-      .provide(Server.serve(app).defaultWithPort(Port))
-      .exitCode
+  override val run =
+    (for {
+      _ <- Server.serve(GameStateApp().withDefaultErrorResponse)
+      _ <- ZIO.log(s"Starting server on port $Port")
+    } yield ())
+      .provide(
+        MailBoxBoard.live,
+        Server.defaultWithPort(Port)
+      ).exitCode
 }
