@@ -1,8 +1,7 @@
 package ffb.nsdb.chess.board
 
-import zio.{Task, UIO, ULayer, ZIO, ZLayer}
+import zio.{RIO, Task, UIO, ULayer, URIO, ZIO, ZLayer}
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
-
 import ffb.nsdb.chess.{Color, Piece, Position}
 
 sealed trait Board {
@@ -10,37 +9,37 @@ sealed trait Board {
 
   def setBoardToFenString: Task[String]
 
-  def getPieceAtPosition(position: Position): Task[Option[Piece]]
+  def getPieceAtPosition(position: Position): UIO[Option[Piece]]
 
   def isKingInCheck(color: Color): UIO[Boolean]
 
-  def getPiecesByColor(color: Color): Task[Seq[Piece]]
+  def getPiecesByColor(color: Color): UIO[Seq[Piece]]
 
-  def getPiecesByColorAndType(color: Color, pieceType: Piece): Task[Seq[Piece]]
+  def getPiecesByColorAndType(color: Color, pieceType: Piece): UIO[Seq[Piece]]
 
-  def toArray: Task[IndexedSeq[String]]
+  def toArray: UIO[IndexedSeq[String]]
 }
 
 object Board {
-  def setBoardPositions(fen: String): ZIO[Board, Throwable, Board] =
+  def setBoardPositions(fen: String): RIO[Board, Board] =
     ZIO.serviceWithZIO[Board](_.setBoardPositions(fen))
 
-  def setBoardToFenString(): ZIO[Board, Throwable, String] =
+  def setBoardToFenString(): RIO[Board, String] =
     ZIO.serviceWithZIO[Board](_.setBoardToFenString)
 
-  def getPieceAtPosition(position: Position): ZIO[Board, Throwable, Option[Piece]] =
+  def getPieceAtPosition(position: Position): URIO[Board, Option[Piece]] =
     ZIO.serviceWithZIO[Board](_.getPieceAtPosition(position))
 
-  def isKingInCheck(color: Color): ZIO[Board, Nothing, Boolean] =
+  def isKingInCheck(color: Color): URIO[Board, Boolean] =
     ZIO.serviceWithZIO[Board](_.isKingInCheck(color))
 
-  def getPiecesByColor(color: Color): ZIO[Board, Throwable, Seq[Piece]] =
+  def getPiecesByColor(color: Color): URIO[Board, Seq[Piece]] =
     ZIO.serviceWithZIO[Board](_.getPiecesByColor(color))
 
-  def getPiecesByColorAndType(color: Color, pieceType: Piece): ZIO[Board, Throwable, Seq[Piece]] =
+  def getPiecesByColorAndType(color: Color, pieceType: Piece): URIO[Board, Seq[Piece]] =
     ZIO.serviceWithZIO[Board](_.getPiecesByColorAndType(color, pieceType))
 
-  def toArray: ZIO[Board, Throwable, IndexedSeq[String]] =
+  def toArray: URIO[Board, IndexedSeq[String]] =
     ZIO.serviceWithZIO[Board](_.toArray)
 
   implicit val encoder: JsonEncoder[Board] = DeriveJsonEncoder.gen[Board].contramap {
@@ -139,17 +138,17 @@ final case class MailBoxBoard(squares: IndexedSeq[Square]) extends Board {
 
   def isKingInCheck(color: Color): UIO[Boolean] = ???
 
-  def getPiecesByColor(color: Color): Task[Seq[Piece]] = ZIO.succeed {
+  def getPiecesByColor(color: Color): UIO[Seq[Piece]] = ZIO.succeed {
     squares.collect { case square: Occupied if square.piece.color == color => square.piece }
   }
 
-  def getPiecesByColorAndType(color: Color, pieceType: Piece): Task[Seq[Piece]] = {
+  def getPiecesByColorAndType(color: Color, pieceType: Piece): UIO[Seq[Piece]] = {
     getPiecesByColor(color) flatMap { piecesByColor =>
       ZIO.succeed(piecesByColor.collect { case piece if pieceType.materialWeight == piece.materialWeight => piece })
     }
   }
 
-  def toArray: Task[IndexedSeq[String]] = ZIO.succeed {
+  def toArray: UIO[IndexedSeq[String]] = ZIO.succeed {
     squares.collect {
       case square: Occupied => square.piece.toString
       case _: Unoccupied    => ""

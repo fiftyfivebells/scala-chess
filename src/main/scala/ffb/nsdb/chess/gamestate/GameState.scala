@@ -1,9 +1,12 @@
 package ffb.nsdb.chess.gamestate
 
 import ffb.nsdb.chess.board.Board
+import ffb.nsdb.chess.gamestate.GameStateException.{IncorrectFenFormatException, MoveClockFormatException}
 import ffb.nsdb.chess.{CastleAvailability, Color, Piece, Position}
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
-import zio.{Task, UIO, ZIO, ZLayer}
+import zio.{IO, Task, UIO, ZIO, ZLayer}
+
+import scala.util.{Failure, Success, Try}
 
 final case class GameState(
   board: Board,
@@ -42,22 +45,41 @@ object GameState {
     ZIO.serviceWithZIO[GameStateService](_.isKingInCheck(color, gameState))
 }
 
+sealed trait GameStateException extends Exception with Product with Serializable {
+  def failReason: String
+}
+object GameStateException {
+  final case object IncorrectFenFormatException extends GameStateException {
+    val failReason: String = s"Incorrect format for fen string"
+  }
+
+  final case object MoveClockFormatException extends GameStateException {
+    val failReason: String = s"Move clock from fen string was not an integer"
+  }
+}
+
 case class GameStateServiceImpl(board: Board) extends GameStateService {
+
+  private def getMoveClockFromString(clock: String): IO[GameStateException, Int] =
+    Try(clock.toInt) match {
+      case Success(moveClock) => ZIO.succeed(moveClock)
+      case Failure(_) => ZIO.fail(MoveClockFormatException)
+    }
 
   def setGameStateFromFenString(fen: String): Task[GameState] = for {
     fenProperties <- ZIO.succeed(fen.split(" "))
-    _ <- ZIO.when(fenProperties.length != 6){
-          ZIO.fail(new Exception(s"Incorrect format for fen string, received: $fen"))
-        }
+    _ <- ZIO.when(fenProperties.length != 6) {
+      ZIO.fail(IncorrectFenFormatException)
+    }
     Array(boardString, side, castleRights, epTarget, halfMove, fullMove) = fenProperties
     board         <- board.setBoardPositions(boardString)
-    side          <- ZIO.attempt(Color(side))
-    halfMoveClock <- ZIO.attempt(halfMove.toInt)
-    fullMoveClock <- ZIO.attempt(fullMove.toInt)
+    side          <- ZIO.succeed(Color(side))
+    halfMoveClock <- getMoveClockFromString(halfMove)
+    fullMoveClock <- getMoveClockFromString(fullMove)
     castleAvailability = CastleAvailability.fromString(castleRights)
-    epOpt = epTarget match {
-      case "-" => None
-      case coords => Some(Position(coords))
+    epOpt <- epTarget match {
+      case "-" => ZIO.none
+      case coords => ZIO.succeed(Position.fromString(coords).toOption)
     }
   } yield GameState(board, side, castleAvailability, epOpt, halfMoveClock, fullMoveClock)
 
@@ -66,7 +88,8 @@ case class GameStateServiceImpl(board: Board) extends GameStateService {
   def getPieceAtPosition(position: Position, gameState: GameState): Task[Option[Piece]] =
     board.getPieceAtPosition(position)
 
-  def isKingInCheck(color: Color, gameState: GameState): UIO[Boolean] = ???
+  def isKingInCheck(color: Color, gameState: GameState): UIO[Boolean] =
+    gameState.board.isKingInCheck(color)
 }
 
 object GameStateServiceImpl {
