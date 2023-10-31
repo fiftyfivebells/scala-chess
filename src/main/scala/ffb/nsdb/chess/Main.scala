@@ -11,11 +11,11 @@ object Main extends ZIOAppDefault {
 
   override val run =
     (for {
-      _ <- Server.serve(GameStateApp().withDefaultErrorResponse)
       _ <- ZIO.log(s"Starting server on port $Port")
+      _ <- Server.serve(GameStateApp().withDefaultErrorResponse)
     } yield ())
       .provide(
-        MailBoxBoard.live,
+        MailBoxBoard.layer,
         Server.defaultWithPort(Port)
       ).exitCode
 }

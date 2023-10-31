@@ -75,7 +75,7 @@ final case class MailBoxBoard(squares: IndexedSeq[Square]) extends Board {
   private val StartOffset: Int = 24 // The offset into the mailbox board to where the real board starts
   private val RowPadding: Int = 2 // The padding on either end of the rows
 
-  private def getPositionFromIndex(index: Int): Position = {
+  private def getPositionFromIndex(index: Int): Either[String, Position] = {
     // Gets the practical index in a 64 square board from the actual index in the mailbox array
     def getChessBoardIndex(i: Int): Int = {
       // Integer division by 12 gives the row of the board and then I subtract the number of padding rows
@@ -85,7 +85,7 @@ final case class MailBoxBoard(squares: IndexedSeq[Square]) extends Board {
       i - StartOffset - RowPadding - (2 * row * RowPadding)
     }
 
-    Position(getChessBoardIndex(index))
+    Position.fromInt(getChessBoardIndex(index))
   }
 
   def setBoardPositions(fen: String): Task[MailBoxBoard] = for {
@@ -101,32 +101,32 @@ final case class MailBoxBoard(squares: IndexedSeq[Square]) extends Board {
     }
     rowPadding = "#" * 24
     mailboxBoard = rowPadding + boardString + rowPadding
-    squares <- ZIO.attempt {
-      mailboxBoard.zipWithIndex
-        .foldLeft(IndexedSeq.fill(120)(OutOfBounds: Square)) {
-          (acc: IndexedSeq[Square], pair: (Char, Int)) => {
-            val i = pair._2
+    squares = scala.collection.mutable.IndexedSeq.fill(120)(OutOfBounds: Square)
+    _ <- ZIO.attempt {
+      mailboxBoard.zipWithIndex.foreach { case (square: Char, index: Int) =>
+        square match {
+          case c if c.isLetter =>
+            for {
+              position <- getPositionFromIndex(index)
+              piece    <- Piece.fromChar(c)
+            } yield squares.update(index, Occupied(piece, position))
 
-            pair._1 match {
-              case c if c.isLetter =>
-                val position = getPositionFromIndex(i)
-                val piece = Piece(c)
-                acc.updated(i, Occupied(piece, position))
-
-              case c if c == '*' =>
-                val position = getPositionFromIndex(i)
-                acc.updated(i, Unoccupied(position))
-
-              case _ => acc
+          case c if c == '*' =>
+            getPositionFromIndex(index) foreach { position =>
+              squares.update(index, Unoccupied(position))
             }
-          }
+
+          // this is just a catch-all case so that the foreach continues if c doesn't match the other two cases
+          case _ =>
+            ()
         }
+      }
     }
-  } yield MailBoxBoard(squares)
+  } yield MailBoxBoard(squares.toIndexedSeq)
 
   def setBoardToFenString: Task[String] = ???
 
-  def getPieceAtPosition(position: Position): Task[Option[Piece]] = {
+  def getPieceAtPosition(position: Position): UIO[Option[Piece]] = {
     val occupiedSquares = squares.collect { case square: Occupied => square }
 
     ZIO.succeed {
