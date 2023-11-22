@@ -27,6 +27,7 @@ object GameStateApp {
   } yield Response.json(gameStateResponse.toJson)
 
   def apply(): Http[Board, Throwable, Request, Response] = Http.collectZIO[Request] {
+    // TODO add better error handling to this endpoint
     case Method.GET -> Root / GameStateRoot / "initializeBoard" => getGameStateResponseFromString(InitialGameStateFen)
 
     case req@Method.GET -> Root / GameStateRoot / "setBoardToFen" =>
