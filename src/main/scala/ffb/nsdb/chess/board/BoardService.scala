@@ -7,7 +7,7 @@ import ffb.nsdb.chess.{Color, Piece, Position}
 sealed trait Board {
   def setBoardPositions(fen: String): Task[Board]
 
-  def setBoardToFenString: Task[String]
+  def setBoardToFenString(): Task[String]
 
   def getPieceAtPosition(position: Position): UIO[Option[Piece]]
 
@@ -25,7 +25,7 @@ object Board {
     ZIO.serviceWithZIO[Board](_.setBoardPositions(fen))
 
   def setBoardToFenString(): RIO[Board, String] =
-    ZIO.serviceWithZIO[Board](_.setBoardToFenString)
+    ZIO.serviceWithZIO[Board](_.setBoardToFenString())
 
   def getPieceAtPosition(position: Position): URIO[Board, Option[Piece]] =
     ZIO.serviceWithZIO[Board](_.getPieceAtPosition(position))
