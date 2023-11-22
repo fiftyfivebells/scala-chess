@@ -176,10 +176,11 @@ package object chess {
   }
   object Position {
 
-    implicit val encoder: JsonEncoder[Position] =
+    implicit val encoder: JsonEncoder[Position] = {
       JsonEncoder[String].contramap(_.toString)
-    implicit val decoder: JsonDecoder[Position] =
-      JsonDecoder[String].map(Position(_))
+    }
+    // TODO this doesn't really do what I want, I need a nice way to decode a string of file/rank (like "a4") to a Position
+    implicit val decoder: JsonDecoder[Position] = DeriveJsonDecoder.gen[Position]
 
     def fromInt(index: Int): Either[String, Position] = for {
 

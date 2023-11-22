@@ -115,7 +115,8 @@ final case class MailBoxBoard(squares: IndexedSeq[Square]) extends Board {
               squares.update(index, Unoccupied(position))
             }
 
-          // this is just a catch-all case so that the foreach continues if c doesn't match the other two cases
+          // TODO this needs to be more selective and throw an error if the fen string has bad characters in it
+          // it currently just silently skips bad characters, which messes up the board it gives back
           case _ =>
             ()
         }
